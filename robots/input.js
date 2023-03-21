@@ -1,17 +1,28 @@
 const readline = require('readline-sync')
+const rssparser = require('rss-parser')
 const state = require('./state.js')
 
-function robot() {
+async function robot() {
   const content = {
     maximumSentences: 7
   }
 
-  content.searchTerm = askAndReturnSearchTerm()
+  content.searchTerm = await askAndReturnSearchTerm()
   content.prefix = askAndReturnPrefix()
   state.save(content)
 
-  function askAndReturnSearchTerm() {
-    return readline.question('Type a Wikipedia search term: ')
+  async function askAndReturnSearchTerm() {
+    const search = readline.question('Type a Wikipedia search term or G to fetch google trends: ')
+
+    return (search.toUpperCase() === 'G') ? await askAndReturnTrend() : search
+  }
+
+  async function askAndReturnTrend() {
+    let trends = await googleTrendsRss()
+    const selectedTrendIndex = readline.keyInSelect(trends, 'Choose one option: ')
+    const selectedTrendText = trends[selectedTrendIndex]
+
+    return selectedTrendText
   }
 
   function askAndReturnPrefix() {
@@ -22,6 +33,13 @@ function robot() {
     return selectedPrefixText
   }
 
+  async function googleTrendsRss() {
+    const parser = new rssparser()
+
+    let rss = await parser.parseURL('https://trends.google.com/trends/trendingsearches/daily/rss?geo=BR')
+
+    return rss.items.map(item => item.title)
+  }
 }
 
 module.exports = robot

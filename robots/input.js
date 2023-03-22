@@ -1,5 +1,6 @@
 const readline = require('readline-sync')
-const rssparser = require('rss-parser')
+const rssParser = require('rss-parser')
+const imdbScrapper = require('imdb-scrapper')
 const state = require('./state.js')
 
 async function robot() {
@@ -7,18 +8,43 @@ async function robot() {
     maximumSentences: 7
   }
 
-  content.searchTerm = await askAndReturnSearchTerm()
+  content.engine = askEngineSearch()
+  content.searchTerm = await askAndReturnSearchTerm(content.engine)
   content.prefix = askAndReturnPrefix(content.searchTerm)
   state.save(content)
 
-  async function askAndReturnSearchTerm() {
-    const search = readline.question('Type a Wikipedia search term or G to fetch google trends: ')
+  function askEngineSearch() {
+    const engines = ['Google', 'IMDB', 'Manual']
 
-    return (search.toUpperCase() === 'G') ? await askAndReturnTrend() : search
+    const chose = readline.keyInSelect(engines, 'Take a engine search: ')
+
+    return engines[chose]
   }
 
-  async function askAndReturnTrend() {
-    let trends = await googleTrendsRss()
+  async function askAndReturnSearchTerm(engine) {
+    switch (engine) {
+      case 'Google':
+      case 'IMDB':
+        return await askAndReturnTrend(engine)
+      case 'Manual':
+        return readline.question('Type a Wikipedia search term: ')
+      default:
+        break;
+    }
+  }
+
+  async function askAndReturnTrend(engine) {
+    let trends
+
+    switch (engine) {
+      case 'Google':
+        trends = await googleTrends()
+        break
+      case 'IMDB':
+        trends = await imdbTrends()
+        break
+    }
+
     const selectedTrendIndex = readline.keyInSelect(trends, 'Choose one option: ')
     const selectedTrendText = trends[selectedTrendIndex]
 
@@ -33,8 +59,14 @@ async function robot() {
     return selectedPrefixText
   }
 
-  async function googleTrendsRss() {
-    const parser = new rssparser()
+  async function imdbTrends() {
+    const imdb = await imdbScrapper.getTrending(20)
+
+    return imdb.trending.map(item => item.name)
+  }
+
+  async function googleTrends() {
+    const parser = new rssParser()
     let rss
 
     try {

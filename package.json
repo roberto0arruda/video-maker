@@ -23,6 +23,7 @@
     "gm": "^1.23.1",
     "googleapis": "^38.0.0",
     "image-downloader": "^3.4.2",
+    "imdb-scrapper": "^2.3.1",
     "readline-sync": "^1.4.9",
     "rss-parser": "^3.12.0",
     "sbd": "^1.0.14",
